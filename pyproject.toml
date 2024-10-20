@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "python-registry-sandbox"
+version = "0.1.0"
+description = ""
+authors = ["Helton Carlos de Souza <heltoncarlossouza@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+taskipy = "^1.13.0"
+setuptools = "^75.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.taskipy.tasks]
+build = """
+  cd libs/samplelib
+  rm -rf dist/ build/ *.egg-info/
+  python setup.py sdist bdist_wheel
+"""
+upload = """
+  rm -rf local/pypi/packages/
+  mkdir -p local/pypi/packages/
+  cp libs/samplelib/dist/* local/pypi/packages/
+"""
+docker = """
+  cd local
+  docker compose down -v --remove-orphans
+  docker compose up --build -d
+"""
+start = """
+  task build
+  task upload
+  task docker
+"""
