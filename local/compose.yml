@@ -16,16 +16,15 @@ services:
     networks:
       - local_network
 
-  tester:
+  local-pypi-tester:
     image: python:3.12-slim
-    command: >
-      sh -c "
-      pip install --upgrade pip &&
-      pip install --trusted-host local-pypi --index-url http://local-pypi:8888/simple samplelib --no-deps
-      "
+    command: ["/bin/bash", "/tmp/scripts/run.sh"]
     depends_on:
       local-pypi:
         condition: service_healthy
+    volumes:
+      - ./pypi/packages:/tmp/packages
+      - ./pypi-tester:/tmp/scripts
     networks:
       - local_network
 

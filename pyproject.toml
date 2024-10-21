@@ -19,15 +19,48 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.taskipy.tasks]
-build = """
-  cd libs/samplelib
-  rm -rf dist/ build/ *.egg-info/
-  python setup.py sdist bdist_wheel
+build_all = """
+  echo "--------------------------------------------"
+  echo "Building all libraries..."
+  for lib in libs/*/; do
+    lib_name=$(basename "$lib")
+    echo "--------------------------------------------"
+    echo "Processing library: $lib_name"
+    cd "$lib"
+    
+    echo "Cleaning previous builds..."
+    rm -rf dist/ build/ *.egg-info/ .venv/
+    
+    if [ -f "setup.py" ]; then
+      echo "Building with setuptools..."
+      python setup.py sdist bdist_wheel
+    elif [ -f "pyproject.toml" ]; then
+      echo "Building with Poetry..."
+      if ! command -v poetry &> /dev/null; then
+        echo "Poetry not found. Installing Poetry..."
+        curl -sSL https://install.python-poetry.org | python3 -
+        export PATH="$HOME/.local/bin:$PATH"
+      fi
+      poetry build
+    else
+      echo "No setup.py or pyproject.toml found in $lib_name. Skipping..."
+    fi
+    
+    cd - > /dev/null
+  done
 """
-upload = """
-  rm -rf local/pypi/packages/
+upload_all = """
+  echo "--------------------------------------------"
+  echo "Uploading all packages to pypiserver..."
+  
   mkdir -p local/pypi/packages/
-  cp libs/samplelib/dist/* local/pypi/packages/
+  
+  rm -rf local/pypi/packages/*
+  
+  cp libs/*/dist/* local/pypi/packages/
+  
+  echo "All packages have been uploaded to pypiserver."
+  echo "--------------------------------------------"
 """
 docker = """
   cd local
@@ -35,7 +68,7 @@ docker = """
   docker compose up --build -d
 """
 start = """
-  task build
-  task upload
+  task build_all
+  task upload_all
   task docker
 """
